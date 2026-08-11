@@ -12,4 +12,6 @@
 - localhost:5174 CORS 문제 해결(서버가 이미 실행중이면 5173이 아니라 5174를 반환)
 - 오류 발생 시 프론트에 원인 표시
 - JSON 디스크 캐시로 응답시간을 약 34초에서 0.1초로 단축
+- app/api/routes/bike.py -> app/services/bike_service.py ->
+- api일 경우 : app/api/clients/seoul_bike.py or csv 불러올 경우 : app/api/repositories/usage_repository.py ->
 ![alt text](<2026-08-11 img.png>)
