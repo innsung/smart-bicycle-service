@@ -12,11 +12,15 @@ const LEGEND = [
 
 export default function StationStatus() {
   const [data, setData] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    publicBikeService.getStations().then(setData);
+    publicBikeService.getStations()
+      .then(setData)
+      .catch((requestError) => setError(requestError.response?.data?.detail || "대여소 현황을 불러오지 못했습니다."));
   }, []);
 
+  if (error) return <div className="rounded-xl border border-danger/30 bg-danger/10 p-5 text-danger">{error}</div>;
   if (!data) return <Loading />;
 
   return (
@@ -44,7 +48,13 @@ export default function StationStatus() {
 
       <p className="mb-1 text-sm font-semibold text-bike">시간대 분석</p>
       <h2 className="mb-4 text-2xl font-extrabold text-white">오늘의 시간대별 이용량</h2>
-      <AreaChartCard data={data.hourlyUsage} xKey="hour" yKey="count" color="#38BDF8" />
+      {data.hourlyUsage.length > 0 ? (
+        <AreaChartCard data={data.hourlyUsage} xKey="hour" yKey="count" color="#38BDF8" />
+      ) : (
+        <p className="rounded-xl border border-border bg-card p-5 text-sm text-gray-400">
+          시간대별 이용정보 CSV를 연결하면 이 차트가 표시됩니다.
+        </p>
+      )}
     </div>
   );
 }

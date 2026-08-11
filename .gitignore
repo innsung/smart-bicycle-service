@@ -1,0 +1,11 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local data and generated artifacts
+*.zip
+*.7z
+*.tar
+*.gz

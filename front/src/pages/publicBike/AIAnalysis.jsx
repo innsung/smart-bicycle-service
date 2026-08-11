@@ -7,17 +7,21 @@ import publicBikeService from "../../services/publicBikeService";
 
 export default function AIAnalysis() {
   const [data, setData] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    publicBikeService.getAnalysis().then(setData);
+    publicBikeService.getAnalysis()
+      .then(setData)
+      .catch((requestError) => setError(requestError.response?.data?.detail || "분석 데이터를 불러오지 못했습니다."));
   }, []);
 
+  if (error) return <div className="rounded-xl border border-danger/30 bg-danger/10 p-5 text-danger">{error}</div>;
   if (!data) return <Loading />;
 
   return (
     <div>
       <p className="mb-1 text-sm font-semibold text-bike">연간 트렌드</p>
-      <h2 className="mb-6 text-2xl font-extrabold text-white">2024년 월별 이용 추이</h2>
+      <h2 className="mb-6 text-2xl font-extrabold text-white">{data.year}년 월별 이용 추이</h2>
       <AreaChartCard
         data={data.monthlyUsage}
         xKey="month"
@@ -51,7 +55,7 @@ export default function AIAnalysis() {
       </div>
 
       <p className="mt-8 text-center text-xs text-gray-600">
-        본 분석은 서울 열린데이터 광장 공공자전거 이용 정보(2024년)를 기반으로 교육·시연 목적으로 재구성한 데이터입니다.
+        본 분석은 서울 열린데이터광장 공공자전거 이용정보({data.year}년)의 실제 집계 데이터입니다.
       </p>
     </div>
   );

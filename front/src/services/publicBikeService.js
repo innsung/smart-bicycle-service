@@ -1,23 +1,12 @@
 import api from "../api/axios";
 import {
-  BIKE_HERO_STATS,
-  STATIONS_MOCK,
-  HOURLY_USAGE,
-  MONTHLY_USAGE,
-  TOP_STATIONS,
-  AGE_DISTRIBUTION,
-  AI_INSIGHTS,
   ROUTES_MOCK,
 } from "../constants/mockData";
 
 // 향후 FastAPI: GET /api/bike/seoul/summary
 async function getSummary() {
-  try {
-    const { data } = await api.get("/bike/seoul/summary");
-    return data;
-  } catch {
-    return BIKE_HERO_STATS;
-  }
+  const { data } = await api.get("/bike/seoul/summary");
+  return data;
 }
 
 // 향후 FastAPI: GET /api/bike/seoul/routes
@@ -32,27 +21,14 @@ async function getBikeRoutes() {
 
 // 향후 FastAPI: GET /api/bike/seoul/stations
 async function getStations() {
-  try {
-    const { data } = await api.get("/bike/seoul/stations");
-    return data;
-  } catch {
-    return { stations: STATIONS_MOCK, hourlyUsage: HOURLY_USAGE };
-  }
+  const { data } = await api.get("/bike/seoul/stations");
+  return data;
 }
 
 // 향후 FastAPI: GET /api/ai/bike/analysis
 async function getAnalysis() {
-  try {
-    const { data } = await api.get("/ai/bike/analysis");
-    return data;
-  } catch {
-    return {
-      monthlyUsage: MONTHLY_USAGE,
-      topStations: TOP_STATIONS,
-      ageDistribution: AGE_DISTRIBUTION,
-      insights: AI_INSIGHTS,
-    };
-  }
+  const { data } = await api.get("/ai/bike/analysis");
+  return data;
 }
 
 const publicBikeService = { getSummary, getBikeRoutes, getStations, getAnalysis };

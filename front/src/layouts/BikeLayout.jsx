@@ -15,9 +15,12 @@ const STAT_ICONS = ["Bike", "MapPin", "Activity", "Clock"];
 
 export default function BikeLayout() {
   const [stats, setStats] = useState(null);
+  const [summaryError, setSummaryError] = useState("");
 
   useEffect(() => {
-    publicBikeService.getSummary().then(setStats);
+    publicBikeService.getSummary()
+      .then(setStats)
+      .catch((error) => setSummaryError(error.response?.data?.detail || "따릉이 현황을 불러오지 못했습니다."));
   }, []);
 
   return (
@@ -60,6 +63,11 @@ export default function BikeLayout() {
             <StatCard key={stat.label} icon={STAT_ICONS[idx]} {...stat} />
           ))}
         </div>
+        {summaryError && (
+          <p className="mb-8 rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+            {summaryError}
+          </p>
+        )}
 
         <nav className="flex gap-2 border-b border-border">
           {TABS.map((tab) => (
