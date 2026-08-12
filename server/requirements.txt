@@ -2,3 +2,7 @@ fastapi
 httpx
 pandas
 uvicorn
+joblib
+matplotlib
+scikit-learn
+seaborn

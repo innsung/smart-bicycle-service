@@ -413,6 +413,8 @@ export const AI_INSIGHTS = [
   },
 ];
 
+// 수요예측 입력 폼의 대여소 목록. district/rackCount는 대여소 선택 시 자동 표시되는 값이고,
+// recentHourlyRentals는 "최근 1시간 대여량" 과거 이용 이력 입력값의 초기 표시값입니다.
 export const DASHBOARD_STATS = {
   user: {
     name: "김민준",

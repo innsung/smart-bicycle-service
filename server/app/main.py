@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.bike import router as bike_router
+from app.api.routes.forecast import router as forecast_router
 from app.core.config import settings
 
 
@@ -16,11 +17,12 @@ app.add_middleware(
     allow_origins=settings.cors_origins,
     allow_origin_regex=settings.cors_origin_regex,
     allow_credentials=True,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
 app.include_router(bike_router, prefix="/api")
+app.include_router(forecast_router, prefix="/api")
 
 
 @app.get("/health", tags=["system"])

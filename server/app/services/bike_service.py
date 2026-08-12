@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 from zoneinfo import ZoneInfo
 
 from app.clients.seoul_bike import RealtimeStation, SeoulBikeClient
@@ -46,7 +47,12 @@ class BikeService:
 
     async def get_stations(self, limit: int) -> dict:
         stations = await self.client.get_all_stations()
-        visible = sorted(stations, key=lambda item: item.available_bikes)[:limit]
+        # 문자열 정렬(102, 1020, 103)이 아닌 대여소명 앞 번호의 숫자 오름차순으로 정렬합니다.
+        def station_number(item: RealtimeStation) -> tuple[int, str]:
+            matched = re.match(r"^\s*(\d+)", item.name)
+            return (int(matched.group(1)) if matched else 999999, item.name)
+
+        visible = sorted(stations, key=station_number)[:limit]
         return {
             "stations": [self._station_card(item) for item in visible],
             "hourlyUsage": [],

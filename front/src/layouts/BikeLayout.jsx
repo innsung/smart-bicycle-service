@@ -9,6 +9,7 @@ const TABS = [
   { label: "따릉이 루트", to: ROUTES.BIKE_SEOUL, end: true },
   { label: "대여소 현황", to: ROUTES.BIKE_STATIONS },
   { label: "AI 분석", to: ROUTES.BIKE_ANALYSIS },
+  { label: "AI 수요예측", to: ROUTES.BIKE_FORECAST },
 ];
 
 const STAT_ICONS = ["Bike", "MapPin", "Activity", "Clock"];

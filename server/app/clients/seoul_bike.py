@@ -41,11 +41,17 @@ class SeoulBikeClient:
             if self._cache and time.monotonic() - self._cached_at < settings.realtime_cache_seconds:
                 return self._cache
 
-            first_page, total_count = await self._fetch_page(1, 1000)
+            first_page, _ = await self._fetch_page(1, 1000)
             stations = list(first_page)
-            for start in range(1001, total_count + 1, 1000):
-                page, _ = await self._fetch_page(start, min(start + 999, total_count))
+            # API의 list_total_count가 페이지 크기(1000)로 내려오는 경우가 있어
+            # 마지막 페이지가 1000개 미만일 때까지 직접 순회합니다.
+            start = 1001
+            while len(stations) < 5000:
+                page, _ = await self._fetch_page(start, start + 999)
                 stations.extend(page)
+                if len(page) < 1000:
+                    break
+                start += 1000
 
             self._cache = stations
             self._cached_at = time.monotonic()

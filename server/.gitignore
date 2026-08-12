@@ -4,6 +4,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 data/processed/
+data/ml_processed/
+data/external/*.csv
+reports/eda/
 
 # 서울시 원본 데이터는 수십 GB이므로 Git에 커밋하지 않습니다.
 data/*
@@ -13,6 +16,7 @@ data/usage/*
 !data/usage/README.md
 data1/
 data2/
+data3/
 
 # 향후 ML 학습 산출물
 models/artifacts/

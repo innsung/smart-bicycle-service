@@ -36,6 +36,7 @@ class Settings:
         "SEOUL_OPEN_DATA_API_BASE_URL", "http://openapi.seoul.go.kr:8088"
     ).rstrip("/")
     realtime_cache_seconds: int = int(os.getenv("REALTIME_CACHE_SECONDS", "60"))
+    kma_service_key: str = os.getenv("KMA_SERVICE_KEY", "").strip()
     usage_data_dir: Path = _path_from_env(
         "SEOUL_BIKE_USAGE_DATA_DIR", SERVER_DIR / "data" / "usage"
     )
