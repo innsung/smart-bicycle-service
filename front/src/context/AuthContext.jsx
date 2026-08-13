@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import authService from "../services/authService";
 
 const AuthContext = createContext(null);
@@ -6,11 +6,31 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const applySession = useCallback(({ accessToken, user: nextUser }) => {
     localStorage.setItem("pedalup_access_token", accessToken);
     setUser(nextUser);
     setIsAuthenticated(true);
+  }, []);
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      if (!localStorage.getItem("pedalup_access_token")) {
+        setIsAuthLoading(false);
+        return;
+      }
+      try {
+        const restoredUser = await authService.getMe();
+        setUser(restoredUser);
+        setIsAuthenticated(true);
+      } catch {
+        authService.clearLocalSession();
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+    restoreSession();
   }, []);
 
   const login = useCallback(
@@ -43,15 +63,15 @@ export function AuthProvider({ children }) {
     return session;
   }, [applySession]);
 
-  const logout = useCallback(() => {
-    authService.logout();
+  const logout = useCallback(async () => {
+    await authService.logout();
     setUser(null);
     setIsAuthenticated(false);
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated, login, signup, loginWithGoogle, loginWithKakao, logout }}
+      value={{ user, isAuthenticated, isAuthLoading, login, signup, loginWithGoogle, loginWithKakao, logout }}
     >
       {children}
     </AuthContext.Provider>

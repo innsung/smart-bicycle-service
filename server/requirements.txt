@@ -6,3 +6,9 @@ joblib
 matplotlib
 scikit-learn
 seaborn
+sqlalchemy
+pymysql
+bcrypt
+python-jose[cryptography]
+email-validator
+openai

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bike, Home, X, Send } from "lucide-react";
+import { Bike, Home, X, Send, RotateCcw } from "lucide-react";
 import { useChatbot } from "../../context/ChatbotContext";
 import ChatMessage from "./ChatMessage";
 import QuickQuestion from "./QuickQuestion";
@@ -8,7 +8,7 @@ import { CHATBOT_QUICK_QUESTIONS } from "../../constants/mockData";
 import { ROUTES } from "../../constants/routes";
 
 export default function ChatbotPanel() {
-  const { close, messages, sendMessage, isSending } = useChatbot();
+  const { close, messages, sendMessage, isSending, reset } = useChatbot();
   const [input, setInput] = useState("");
   const scrollRef = useRef(null);
 
@@ -39,6 +39,14 @@ export default function ChatbotPanel() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={reset}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:text-white"
+            aria-label="대화 초기화"
+            title="대화 초기화"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
           <Link
             to={ROUTES.HOME}
             className="flex h-8 w-8 items-center justify-center rounded-lg bg-neon/10 text-neon hover:bg-neon/20"
@@ -79,6 +87,7 @@ export default function ChatbotPanel() {
           />
           <button
             onClick={() => handleSend()}
+            disabled={isSending}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neon text-black hover:bg-neon-dark"
             aria-label="전송"
           >

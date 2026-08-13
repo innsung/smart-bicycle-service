@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import Logo from "../common/Logo";
 import Button from "../common/Button";
 import { ROUTES } from "../../constants/routes";
+import { useAuth } from "../../context/AuthContext";
 
 const NAV_ITEMS = [
   { label: "라이딩 시작", to: ROUTES.RIDING_START },
@@ -13,6 +14,12 @@ const NAV_ITEMS = [
 
 export default function PublicHeader({ backTo, backLabel, centerLabel, showNav = false, showAuthActions = true }) {
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate(ROUTES.HOME);
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur">
@@ -46,7 +53,12 @@ export default function PublicHeader({ backTo, backLabel, centerLabel, showNav =
           </nav>
         )}
 
-        {showAuthActions ? (
+        {showAuthActions && isAuthenticated ? (
+          <div className="flex items-center gap-4">
+            <span className="hidden text-sm font-semibold text-white sm:block">{user?.nickname}님</span>
+            <Button size="sm" variant="dark" onClick={handleLogout}>로그아웃</Button>
+          </div>
+        ) : showAuthActions ? (
           <div className="flex items-center gap-4">
             <Link to={ROUTES.LOGIN} className="hidden text-sm text-gray-300 hover:text-white sm:block">
               로그인

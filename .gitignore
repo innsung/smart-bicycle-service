@@ -9,3 +9,10 @@ Thumbs.db
 *.7z
 *.tar
 *.gz
+
+# Local database and secrets
+*.db
+*.sqlite
+*.sqlite3
+.env
+!.env.example

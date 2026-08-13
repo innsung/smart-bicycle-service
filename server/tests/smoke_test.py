@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from app.repositories.usage_repository import UsageRepository
+from repositories.usage import UsageRepository
 from main import app
 
 
@@ -26,7 +26,7 @@ def run() -> None:
     assert legacy.total_usage == 7
     assert legacy.top_stations[0]["name"] == "더샵스타시티 C동 앞"
 
-    from app.repositories.usage_repository import _clean_station_name
+    from repositories.usage import _clean_station_name
     assert _clean_station_name("2715.마곡나루역 2번 출구") == "마곡나루역 2번 출구"
     assert _clean_station_name("5515 여의도역") == "여의도역"
     print("backend smoke test passed")

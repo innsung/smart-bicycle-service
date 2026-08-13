@@ -17,7 +17,13 @@ export function ChatbotProvider({ children }) {
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
 
-  const reset = useCallback(() => setMessages(INITIAL_MESSAGES), []);
+  const reset = useCallback(async () => {
+    try {
+      await chatbotService.resetChat();
+    } finally {
+      setMessages(INITIAL_MESSAGES);
+    }
+  }, []);
 
   const sendMessage = useCallback(async (text) => {
     if (!text.trim()) return;
@@ -25,8 +31,18 @@ export function ChatbotProvider({ children }) {
     setMessages((prev) => [...prev, userMessage]);
     setIsSending(true);
     try {
-      const answer = await chatbotService.sendMessage(text);
-      setMessages((prev) => [...prev, { id: `b-${Date.now()}`, role: "bot", text: answer }]);
+      const result = await chatbotService.sendMessage(text);
+      setMessages((prev) => [...prev, { id: `b-${Date.now()}`, role: "bot", text: result.answer }]);
+    } catch (error) {
+      const detail = error.response?.data?.detail;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `e-${Date.now()}`,
+          role: "bot",
+          text: detail || "AI 챗봇에 연결하지 못했습니다. 잠시 후 다시 시도해주세요.",
+        },
+      ]);
     } finally {
       setIsSending(false);
     }

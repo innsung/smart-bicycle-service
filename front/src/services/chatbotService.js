@@ -1,24 +1,29 @@
 import api from "../api/axios";
-import { CHATBOT_MOCK_ANSWERS } from "../constants/mockData";
 
-function pickMockAnswer(message) {
-  const text = message.toLowerCase();
-  if (text.includes("루트") || text.includes("추천")) return CHATBOT_MOCK_ANSWERS.루트;
-  if (text.includes("따릉이")) return CHATBOT_MOCK_ANSWERS.따릉이;
-  if (text.includes("요금") || text.includes("가격")) return CHATBOT_MOCK_ANSWERS.요금;
-  if (text.includes("앱") || text.includes("다운로드")) return CHATBOT_MOCK_ANSWERS.앱;
-  return CHATBOT_MOCK_ANSWERS.기본;
-}
+const SESSION_KEY = "pedalup_chat_session_id";
 
-// 향후 FastAPI: POST /api/chat  { message } -> { answer }
-async function sendMessage(message) {
-  try {
-    const { data } = await api.post("/chat", { message });
-    return data.answer;
-  } catch {
-    return pickMockAnswer(message);
+function getSessionId() {
+  let sessionId = sessionStorage.getItem(SESSION_KEY);
+  if (!sessionId) {
+    sessionId = globalThis.crypto?.randomUUID?.() ?? `chat-${Date.now()}`;
+    sessionStorage.setItem(SESSION_KEY, sessionId);
   }
+  return sessionId;
 }
 
-const chatbotService = { sendMessage };
+async function sendMessage(message) {
+  const { data } = await api.post("/chat", {
+    session_id: getSessionId(),
+    message,
+    temperature: 0.4,
+  });
+  return data;
+}
+
+async function resetChat() {
+  const sessionId = getSessionId();
+  await api.post("/chat/reset", null, { params: { session_id: sessionId } });
+}
+
+const chatbotService = { sendMessage, resetChat, getSessionId };
 export default chatbotService;

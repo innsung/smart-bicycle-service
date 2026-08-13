@@ -3,7 +3,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app.services.demand_forecast_service import (
+from services.forecast import (
     build_feature_row,
     calculate_shortage_risk,
     predict_demand_and_risk,

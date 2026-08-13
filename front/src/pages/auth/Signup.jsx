@@ -29,6 +29,7 @@ export default function Signup() {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -58,17 +59,24 @@ export default function Signup() {
     e.preventDefault();
     if (!validate()) return;
     setIsSubmitting(true);
+    setSubmitError("");
     try {
       await signup(form);
       navigate(ROUTES.DASHBOARD);
+    } catch (error) {
+      setSubmitError(error.response?.data?.detail || "회원가입 중 오류가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSocial = async (provider) => {
-    await provider();
-    navigate(ROUTES.DASHBOARD);
+    try {
+      await provider();
+      navigate(ROUTES.DASHBOARD);
+    } catch (error) {
+      setSubmitError(error.message || "소셜 로그인을 사용할 수 없습니다.");
+    }
   };
 
   return (
@@ -136,6 +144,11 @@ export default function Signup() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {submitError && (
+              <p className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+                {submitError}
+              </p>
+            )}
             <Input icon={User} placeholder="이름 (닉네임)" value={form.nickname} onChange={handleChange("nickname")} error={errors.nickname} />
             <Input icon={Mail} type="email" placeholder="이메일 주소" value={form.email} onChange={handleChange("email")} error={errors.email} />
             <Input icon={Lock} type="password" placeholder="비밀번호 (8자 이상)" value={form.password} onChange={handleChange("password")} error={errors.password} />

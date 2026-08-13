@@ -9,7 +9,7 @@ from urllib.parse import unquote
 
 import httpx
 
-from app.core.config import settings
+from core.config import settings
 
 
 SEOUL_TZ = ZoneInfo("Asia/Seoul")

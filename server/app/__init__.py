@@ -1,1 +1,0 @@
-"""Smart bicycle service backend."""

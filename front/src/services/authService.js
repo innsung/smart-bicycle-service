@@ -1,44 +1,49 @@
 import api from "../api/axios";
 
-const MOCK_USER = {
-  id: "mock-user-1",
-  nickname: "김민준",
-  handle: "@minzun_rides",
-  email: "minjun@example.com",
-};
-
-// 향후 FastAPI: POST /api/auth/login
 async function login({ email, password }) {
-  try {
-    const { data } = await api.post("/auth/login", { email, password });
-    return data;
-  } catch {
-    return { accessToken: "mock-access-token", user: MOCK_USER };
-  }
+  const { data } = await api.post("/auth/login", { email, password });
+  return data;
 }
 
-// 향후 FastAPI: POST /api/auth/signup
 async function signup(payload) {
+  // false = 마케팅 미동의(DB 0), true = 마케팅 동의(DB 1)
+  const signupPayload = {
+    ...payload,
+    agreeRequired: Boolean(payload.agreeRequired),
+    agreeMarketing: Boolean(payload.agreeMarketing),
+  };
+  const { data } = await api.post("/auth/signup", signupPayload);
+  return data;
+}
+
+async function getMe() {
+  const { data } = await api.get("/auth/me");
+  return data;
+}
+
+async function socialLoginNotConfigured() {
+  throw new Error("소셜 로그인은 OAuth 인증키 설정 후 사용할 수 있습니다.");
+}
+
+async function logout() {
   try {
-    const { data } = await api.post("/auth/signup", payload);
-    return data;
-  } catch {
-    return { accessToken: "mock-access-token", user: { ...MOCK_USER, nickname: payload.nickname || MOCK_USER.nickname } };
+    await api.post("/auth/logout");
+  } finally {
+    localStorage.removeItem("pedalup_access_token");
   }
 }
 
-// 향후 FastAPI OAuth 연동 지점 — 현재는 UI 전용
-async function loginWithGoogle() {
-  return login({ email: "google-user@example.com", password: "oauth" });
-}
-
-async function loginWithKakao() {
-  return login({ email: "kakao-user@example.com", password: "oauth" });
-}
-
-function logout() {
+function clearLocalSession() {
   localStorage.removeItem("pedalup_access_token");
 }
 
-const authService = { login, signup, loginWithGoogle, loginWithKakao, logout };
+const authService = {
+  login,
+  signup,
+  getMe,
+  logout,
+  clearLocalSession,
+  loginWithGoogle: socialLoginNotConfigured,
+  loginWithKakao: socialLoginNotConfigured,
+};
 export default authService;

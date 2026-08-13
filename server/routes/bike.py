@@ -4,9 +4,9 @@ from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.clients.seoul_bike import SeoulBikeClient, SeoulBikeError
-from app.repositories.usage_repository import UsageDataError, UsageRepository
-from app.services.bike_service import BikeService
+from clients.seoul_bike import SeoulBikeClient, SeoulBikeError
+from repositories.usage import UsageDataError, UsageRepository
+from services.bike import BikeService
 
 
 router = APIRouter(tags=["seoul-bike"])

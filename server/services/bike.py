@@ -2,8 +2,8 @@ from datetime import datetime
 import re
 from zoneinfo import ZoneInfo
 
-from app.clients.seoul_bike import RealtimeStation, SeoulBikeClient
-from app.repositories.usage_repository import UsageDataError, UsageRepository
+from clients.seoul_bike import RealtimeStation, SeoulBikeClient
+from repositories.usage import UsageDataError, UsageRepository
 
 
 SEOUL_TZ = ZoneInfo("Asia/Seoul")

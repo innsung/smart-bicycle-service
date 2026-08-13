@@ -20,7 +20,7 @@ import pandas as pd
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.core.config import settings  # .env 로드
+from core.config import settings  # .env 로드
 from ml.config import WEATHER_PATH
 
 

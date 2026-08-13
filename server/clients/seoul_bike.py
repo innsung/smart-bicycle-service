@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import httpx
 
-from app.core.config import settings
+from core.config import settings
 
 
 class SeoulBikeError(RuntimeError):

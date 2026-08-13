@@ -14,6 +14,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", password: "", keepLoggedIn: false });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleChange = (field) => (e) => {
     const value = field === "keepLoggedIn" ? e.target.checked : e.target.value;
@@ -32,17 +33,24 @@ export default function Login() {
     e.preventDefault();
     if (!validate()) return;
     setIsSubmitting(true);
+    setSubmitError("");
     try {
       await login(form);
       navigate(ROUTES.DASHBOARD);
+    } catch (error) {
+      setSubmitError(error.response?.data?.detail || "로그인 중 오류가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSocial = async (provider) => {
-    await provider();
-    navigate(ROUTES.DASHBOARD);
+    try {
+      await provider();
+      navigate(ROUTES.DASHBOARD);
+    } catch (error) {
+      setSubmitError(error.message || "소셜 로그인을 사용할 수 없습니다.");
+    }
   };
 
   return (
@@ -98,6 +106,11 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {submitError && (
+              <p className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+                {submitError}
+              </p>
+            )}
             <Input
               icon={Mail}
               type="email"

@@ -1,16 +1,15 @@
 """다음 1시간 따릉이 수요·부족 위험도 예측 API."""
 
 import re
-from datetime import date, datetime
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-
-from app.api.routes.bike import get_bike_service
-from app.clients.kma_weather import KmaWeatherError, get_hourly_forecast
-from app.clients.seoul_bike import RealtimeStation, SeoulBikeError
-from app.services.demand_forecast_service import (
+from clients.kma_weather import KmaWeatherError, get_hourly_forecast
+from clients.seoul_bike import RealtimeStation, SeoulBikeError
+from routes.bike import get_bike_service
+from schemas.forecast import DemandForecastRequest
+from services.forecast import (
     build_feature_row,
     get_historical_features,
     predict_demand_and_risk,
@@ -19,12 +18,6 @@ from app.services.demand_forecast_service import (
 
 router = APIRouter(tags=["bike-demand-forecast"])
 SEOUL_TZ = ZoneInfo("Asia/Seoul")
-
-
-class DemandForecastRequest(BaseModel):
-    station_id: str
-    date: date
-    hour: int
 
 
 def usage_station_id(station: RealtimeStation) -> str:

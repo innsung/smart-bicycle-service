@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from app.core.config import settings
+from core.config import settings
 
 
 _CACHE_LOCK = threading.Lock()
