@@ -1,0 +1,48 @@
+{
+  "target": "target_rental_count_1h",
+  "active_features": [
+    "station_id",
+    "district",
+    "year",
+    "month",
+    "hour",
+    "day_of_week",
+    "is_weekend",
+    "is_holiday",
+    "is_morning_peak",
+    "is_evening_peak",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "temperature",
+    "humidity",
+    "rainfall",
+    "is_raining",
+    "wind_speed",
+    "rental_lag_1h",
+    "rental_lag_2h",
+    "rental_lag_24h",
+    "rental_lag_168h",
+    "rental_rolling_mean_3h",
+    "rental_rolling_mean_24h",
+    "rental_rolling_mean_7d_same_hour",
+    "rental_rolling_std_24h",
+    "current_available_bikes",
+    "available_bikes_lag_1h",
+    "available_bikes_change_1h"
+  ],
+  "excluded_all_missing_features": [],
+  "baseline_validation": {
+    "mae": 1.2772,
+    "rmse": 2.3271
+  },
+  "model_validation": {
+    "mae": 0.9147,
+    "rmse": 1.4561
+  },
+  "model_test": {
+    "mae": 0.7538,
+    "rmse": 1.269
+  }
+}

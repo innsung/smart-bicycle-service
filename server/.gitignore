@@ -3,7 +3,6 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
-data/processed/
 data/ml_processed/
 data/external/*.csv
 reports/eda/
@@ -14,12 +13,18 @@ data/*
 data/usage/*
 !data/usage/.gitkeep
 !data/usage/README.md
+# 분석 JSON 캐시와 로컬 DB는 포함하되 CSV 원본은 계속 제외합니다.
+!data/processed/
+data/processed/*
+!data/processed/usage_analysis_latest.json
+!data/smart_bicycle.db
 data1/
 data2/
 data3/
 
-# 향후 ML 학습 산출물
-models/artifacts/
-*.joblib
+# ML 모델과 평가 JSON은 포함하고 추론 CSV 등 대용량 파일은 제외합니다.
+models/artifacts/*
+!models/artifacts/*.joblib
+!models/artifacts/*.json
 *.pkl
 *.parquet

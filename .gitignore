@@ -14,6 +14,8 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite3
+# 배포 확인용 로컬 DB는 Git에 포함합니다.
+!server/data/smart_bicycle.db
 .env
 !.env.example
 *.pem
