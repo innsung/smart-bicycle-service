@@ -261,3 +261,97 @@
   ```
 
 ![alt text](<2026-08-13 img.png>)
+
+#### 2026-08-14
+
+##### AWS EC2 + Docker 배포
+
+- AWS EC2에 `seoul-bike` 인스턴스를 생성하고 따릉이 서비스를 외부에서 접속할 수 있도록 배포
+  - 운영체제: Ubuntu Server
+  - 스토리지: `gp3 30GiB`
+  - 서비스 접속 주소: `http://3.35.11.1` (현재는 인스턴스 중지 상태)
+  - AI 분석 화면: `http://3.35.11.1/bike/seoul/analysis` (현재는 인스턴스 중지 상태)
+  - Swagger API 문서: `http://3.35.11.1/docs` (현재는 인스턴스 중지 상태)
+- EC2 보안 그룹 구성 
+  - SSH `22`: 관리자 PC의 IP만 허용
+  - HTTP `80`: 외부 접속을 위해 `0.0.0.0/0` 허용
+  - MySQL `3306`, FastAPI `8000`, Vite `5173`은 외부에 직접 공개하지 않음
+- Windows에서 `.pem` 키 권한을 설정하고 SSH로 Ubuntu 서버에 접속
+  - icacls .\seoul-bike.pem /inheritance:r
+  - icacls .\seoul-bike.pem /grant:r "$($env:USERNAME):(R)"
+  - icacls .\seoul-bike.pem
+- Docker 및 Docker Compose 설치
+- 메모리 부족과 Docker 빌드 중 서버 응답 지연을 줄이기 위해 2GiB Swap 구성 (t3.small)
+- Linux 컨테이너에서 실행되는 `server/start.sh`의 줄바꿈을 `CRLF`가 아닌 `LF`로 적용
+
+##### Docker 서비스 구성
+
+- `docker-compose.yml`을 이용해 다음 세 서비스를 컨테이너로 실행
+  - `pedalup-frontend`: React 정적 파일을 제공하는 Nginx 컨테이너
+  - `pedalup-backend`: FastAPI 및 ML 추론 API 컨테이너
+  - `pedalup-mysql`: 회원정보를 저장하는 MySQL 8.4 컨테이너
+- Nginx가 외부 `80(http)` 포트에서 요청을 받고 `/api`, `/docs`, `/openapi.json` 요청을 FastAPI로 전달
+- MySQL은 Docker 내부 네트워크에서만 FastAPI와 연결
+- 컨테이너 Health Check를 통해 frontend, backend, mysql이 모두 `healthy` 상태인 것을 확인
+
+##### 환경변수 및 운영 데이터 배포
+
+- EC2 전용 `.env` 파일 구성
+  - MySQL 연결정보 및 비밀번호
+  - JWT Access/Refresh Secret
+  - 서울시 공공데이터 API 인증키
+  - 기상청 API 인증키
+  - OpenAI API 인증키
+  - EC2 주소 기반 CORS 설정(pulic ipv4 변경 원하지 않으면, 탄력적 IP 주소 할당 해야하)
+- Git에서 제외된 AI 모델과 운영 데이터를 SCP로 별도 업로드
+  - `server/models/artifacts/demand_model.joblib`
+  - `server/models/artifacts/inference_features.csv`
+  - `server/data/usage`의 따릉이 이용정보 CSV
+  - `server/data/external`의 날씨 데이터
+- AI 분석 차트, 수요예측 대여소 목록 및 ML 예측 API가 EC2 환경에서도 동작하는 것을 확인
+
+##### 회원·API 배포 확인
+
+- React 회원가입 요청이 EC2의 FastAPI를 거쳐 Docker MySQL의 `bike_member` 테이블에 저장되는 것을 확인
+- 로컬 MySQL과 EC2 Docker MySQL은 서로 별개의 데이터베이스이므로 EC2 회원은 다음 흐름으로 조회
+
+  ```text
+  React 회원가입
+  → Nginx /api 프록시
+  → FastAPI 회원 API
+  → Docker 내부 MySQL
+  → fastapi_db.bike_member
+  ```
+
+- 배포 후 다음 기능의 정상 동작 확인
+  - 서울시 따릉이 실시간 현황
+  - AI 분석 대시보드
+  - AI 수요·자전거 부족 위험도 예측
+  - 회원가입·로그인
+  - AI 챗봇
+
+##### 서버 운영 명령어
+
+```bash
+
+# 실행 상태 확인
+docker compose ps
+
+# 전체 컨테이너 종료(MySQL 볼륨 유지)
+docker compose down
+
+# 코드 및 이미지 변경 후 재빌드
+docker compose up --build -d
+
+# 백엔드 로그 확인
+docker compose logs --tail=200 backend
+
+# 사용하지 않는 빌드 캐시 정리
+docker builder prune -f
+```
+
+- `docker compose down -v`는 MySQL 회원 데이터 볼륨을 삭제할 수 있으므로 사용하지 않음
+- Docker만 종료해도 EC2 실행 비용은 계속 계산되므로 사용하지 않을 때는 AWS 콘솔에서 인스턴스를 `중지`
+- EC2를 다시 시작하면 퍼블릭 IPv4가 변경될 수 있으므로 새 IP와 `.env`의 `CORS_ORIGINS`를 확인
+
+![alt text](<2026-08-14 img.png>)
