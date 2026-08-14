@@ -1,4 +1,9 @@
+import json
+from dataclasses import asdict
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -20,6 +25,21 @@ def run() -> None:
     assert result.top_stations[0] == {"name": "Alpha", "count": 40}
     assert result.age_distribution[0] == {"age": "20대", "percent": 66.7}
     assert result.average_minutes == 13.0
+
+    # 원본 월별 CSV가 없는 과제 제출본에서도 집계 JSON 스냅샷으로 분석한다.
+    with TemporaryDirectory() as temporary_directory:
+        usage_directory = Path(temporary_directory) / "usage"
+        processed_directory = Path(temporary_directory) / "processed"
+        usage_directory.mkdir()
+        processed_directory.mkdir()
+        (processed_directory / "usage_analysis_latest.json").write_text(
+            json.dumps({"source_signature": [], "analysis": asdict(result)}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        test_settings = SimpleNamespace(usage_data_dir=usage_directory)
+        with patch("repositories.usage.settings", test_settings):
+            snapshot_result = UsageRepository().get_analysis(2025)
+        assert snapshot_result == result
 
     legacy_sample = Path(__file__).parent / "data" / "usage_legacy_sample.csv"
     legacy = UsageRepository._aggregate((legacy_sample,), 2017)

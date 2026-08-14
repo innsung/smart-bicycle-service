@@ -53,7 +53,8 @@ services:
       - ./server/models/artifacts:/app/models/artifacts:ro
       - ./server/data/usage:/app/data/usage:ro
       - ./server/data/external:/app/data/external:ro
-      - backend_cache:/app/data/processed
+      # 제출본에 포함된 분석 JSON 스냅샷을 읽고 새 캐시도 호스트에 유지합니다.
+      - ./server/data/processed:/app/data/processed
     depends_on:
       mysql:
         condition: service_healthy
@@ -92,7 +93,6 @@ services:
 
 volumes:
   mysql_data:
-  backend_cache:
 
 networks:
   pedalup-network:

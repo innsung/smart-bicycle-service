@@ -26,5 +26,7 @@ data3/
 models/artifacts/*
 !models/artifacts/*.joblib
 !models/artifacts/*.json
+# 과제 제출 및 운영 추론에 필요한 경량 Feature 저장소(약 9.6MB)
+!models/artifacts/inference_features.csv
 *.pkl
 *.parquet

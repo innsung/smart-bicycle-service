@@ -46,16 +46,31 @@ class UsageRepository:
 
     def get_analysis(self, year: int | None = None) -> UsageAnalysis:
         files = tuple(sorted(settings.usage_data_dir.glob("*.csv")))
-        if not files:
-            raise UsageDataError(
-                f"이용정보 CSV가 없습니다. 서울시 '공공자전거 이용정보(월별)' CSV를 "
-                f"{settings.usage_data_dir} 폴더에 넣으세요."
-            )
-        signature = _files_signature(files)
         cache_path = _cache_path(year)
 
         # summary와 analysis가 동시에 최초 호출되어 CSV를 중복 집계하지 않도록 한다.
         with _CACHE_LOCK:
+            # 과제 제출·경량 배포 환경에서는 수백 MB의 원본 CSV 대신 Git에 포함된
+            # 집계 JSON 스냅샷을 사용한다. 특정 연도를 요청한 경우에는 동일 연도의
+            # latest 스냅샷까지만 대체값으로 허용한다.
+            if not files:
+                snapshot_paths = [cache_path]
+                latest_cache_path = _cache_path(None)
+                if latest_cache_path not in snapshot_paths:
+                    snapshot_paths.append(latest_cache_path)
+
+                for snapshot_path in snapshot_paths:
+                    snapshot = _read_snapshot_cache(snapshot_path, year)
+                    if snapshot is not None:
+                        return snapshot
+
+                raise UsageDataError(
+                    f"이용정보 CSV와 분석 스냅샷이 없습니다. 서울시 '공공자전거 "
+                    f"이용정보(월별)' CSV를 {settings.usage_data_dir} 폴더에 넣거나 "
+                    f"{latest_cache_path} 파일을 포함하세요."
+                )
+
+            signature = _files_signature(files)
             cached = _read_disk_cache(cache_path, signature)
             if cached is not None:
                 return cached
@@ -227,6 +242,20 @@ def _read_disk_cache(cache_path: Path, signature: list[dict]) -> UsageAnalysis |
             return None
         return UsageAnalysis(**payload["analysis"])
     except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        return None
+
+
+def _read_snapshot_cache(cache_path: Path, requested_year: int | None) -> UsageAnalysis | None:
+    """원본 CSV가 없는 제출·배포 환경에서 사전 집계 JSON을 읽는다."""
+    if not cache_path.exists():
+        return None
+    try:
+        payload = json.loads(cache_path.read_text(encoding="utf-8"))
+        analysis = UsageAnalysis(**payload["analysis"])
+        if requested_year is not None and analysis.year != requested_year:
+            return None
+        return analysis
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
         return None
 
 
