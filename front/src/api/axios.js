@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000/api",
+  // 운영(Nginx)은 같은 도메인의 /api, 로컬은 Vite proxy를 사용합니다.
+  baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
   withCredentials: true,
   // 최초 실행 시 공식 CSV 집계 캐시 생성 시간이 필요할 수 있습니다.
   timeout: 60000,

@@ -16,3 +16,5 @@ Thumbs.db
 *.sqlite3
 .env
 !.env.example
+*.pem
+.env.ec2

@@ -1,0 +1,99 @@
+name: smart-bicycle-service
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: pedalup-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-fastapi_db}
+      MYSQL_USER: ${DB_USER:-bike_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Seoul
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - pedalup-network
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: pedalup-backend
+    restart: unless-stopped
+    environment:
+      DB_USER: ${DB_USER:-bike_app}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-fastapi_db}
+      ACCESS_SECRET: ${ACCESS_SECRET}
+      REFRESH_SECRET: ${REFRESH_SECRET}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      SEOUL_OPEN_DATA_API_KEY: ${SEOUL_OPEN_DATA_API_KEY}
+      SEOUL_OPEN_DATA_API_BASE_URL: ${SEOUL_OPEN_DATA_API_BASE_URL:-http://openapi.seoul.go.kr:8088}
+      SEOUL_BIKE_USAGE_DATA_DIR: /app/data/usage
+      REALTIME_CACHE_SECONDS: ${REALTIME_CACHE_SECONDS:-60}
+      KMA_SERVICE_KEY: ${KMA_SERVICE_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://3.34.185.174}
+      CORS_ORIGIN_REGEX: ${CORS_ORIGIN_REGEX:-}
+      TZ: Asia/Seoul
+    volumes:
+      - ./server/models/artifacts:/app/models/artifacts:ro
+      - ./server/data/usage:/app/data/usage:ro
+      - ./server/data/external:/app/data/external:ro
+      - backend_cache:/app/data/processed
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    expose:
+      - "8000"
+    networks:
+      - pedalup-network
+
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: pedalup-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - pedalup-network
+
+volumes:
+  mysql_data:
+  backend_cache:
+
+networks:
+  pedalup-network:
+    driver: bridge
