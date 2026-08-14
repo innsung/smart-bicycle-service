@@ -1,7 +1,6 @@
 #!/bin/sh
 set -eu
 
-
 echo "PEDALUP FastAPI 서버 시작 준비"
 
 if [ ! -f /app/models/artifacts/demand_model.joblib ]; then
