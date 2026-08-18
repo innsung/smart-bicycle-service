@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from functools import lru_cache
+from zoneinfo import ZoneInfo
 
 import joblib
 import numpy as np
 import pandas as pd
 
+from clients.kma_weather import get_hourly_forecast
+from clients.seoul_bike import RealtimeStation, SeoulBikeClient
 from ml.config import INFERENCE_FEATURES_PATH, MODEL_PATH
+from schemas.forecast import DemandForecastRequest
 
 
 RISK_THRESHOLDS = (
@@ -18,6 +23,95 @@ RISK_THRESHOLDS = (
     (40, "보통"),
     (0, "낮음"),
 )
+SEOUL_TZ = ZoneInfo("Asia/Seoul")
+
+
+class ForecastService:
+    """실시간 대여소·날씨·과거 Feature를 조합해 수요를 예측합니다."""
+
+    def __init__(self, bike_client: SeoulBikeClient) -> None:
+        self.bike_client = bike_client
+
+    async def forecast(self, request: DemandForecastRequest) -> dict:
+        stations = await self.bike_client.get_all_stations()
+        station = find_station(stations, request.station_id)
+        if station is None:
+            raise LookupError("선택한 대여소를 실시간 API에서 찾을 수 없습니다.")
+
+        target_datetime = datetime.combine(
+            request.date, datetime.min.time(), SEOUL_TZ
+        ).replace(hour=request.hour)
+        weather = await get_hourly_forecast(
+            station.latitude, station.longitude, target_datetime
+        )
+        ml_station_id = usage_station_id(station)
+        historical = get_historical_features(ml_station_id, request.hour)
+        feature_row = build_feature_row(
+            station_id=ml_station_id,
+            target_datetime=target_datetime,
+            weather=weather,
+            historical=historical,
+            current_available_bikes=station.available_bikes,
+        )
+        result = predict_demand_and_risk(feature_row)
+        result.update({
+            "station_id": station.station_id,
+            "usage_station_id": ml_station_id,
+            "station_name": clean_station_name(station.name),
+            "prediction_datetime": target_datetime.isoformat(),
+            "weather": weather,
+            "historical_features": {
+                "recent_1h_rental_count": historical["rental_lag_1h"],
+                "prev_day_same_hour_rental_count": historical["rental_lag_24h"],
+                "rolling_7d_same_hour_avg": historical[
+                    "rental_rolling_mean_7d_same_hour"
+                ],
+                "source_datetime": historical["datetime"],
+            },
+            "message": shortage_message(result),
+        })
+        return result
+
+
+def usage_station_id(station: RealtimeStation) -> str:
+    """실시간 API 대여소명을 ML 학습 데이터의 station_id로 변환합니다."""
+    matched = re.match(r"^\s*(\d+)", station.name)
+    if matched:
+        return matched.group(1).lstrip("0")
+    return "".join(filter(str.isdigit, station.station_id)).lstrip("0")
+
+
+def find_station(
+    stations: list[RealtimeStation], requested_id: str
+) -> RealtimeStation | None:
+    """서울시 API ID와 이용정보 CSV 번호를 모두 허용해 대여소를 찾습니다."""
+    requested_id = requested_id.strip()
+    requested_digits = "".join(filter(str.isdigit, requested_id)).lstrip("0")
+    return next(
+        (
+            station
+            for station in stations
+            if station.station_id == requested_id
+            or usage_station_id(station) == requested_digits
+            or "".join(filter(str.isdigit, station.station_id)).lstrip("0")
+            == requested_digits
+        ),
+        None,
+    )
+
+
+def clean_station_name(name: str) -> str:
+    return re.sub(r"^\s*\d+\s*[.\-_:]?\s*", "", name).strip()
+
+
+def shortage_message(result: dict) -> str:
+    if result["shortage_count"] > 0:
+        return (
+            f"예측 수요가 현재 자전거보다 {result['shortage_count']}대 많아 "
+            "재배치를 권장합니다."
+        )
+    remaining = max(result["available_bikes"] - result["predicted_demand"], 0)
+    return f"예측 수요를 충족할 수 있으나 예상 여유 자전거는 {remaining}대입니다."
 
 
 def calculate_shortage_risk(predicted_demand: int | float, available_bikes: int | float) -> dict:

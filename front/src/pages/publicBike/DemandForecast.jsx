@@ -49,14 +49,21 @@ export default function DemandForecast() {
     value: seoulDate(offset),
     label: offset === 0 ? `오늘 (${seoulDate(offset)})` : offset === 1 ? `내일 (${seoulDate(offset)})` : `${offset}일 후 (${seoulDate(offset)})`,
   })), []);
-  const currentSeoulHour = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: "Asia/Seoul" }).format(new Date()));
-  const selectableHours = date === seoulDate()
-    ? HOUR_OPTIONS.filter((value) => value > currentSeoulHour)
-    : HOUR_OPTIONS;
+  const selectableHours = useMemo(() => {
+    if (date !== seoulDate()) return HOUR_OPTIONS;
+    const currentSeoulHour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        hour: "2-digit",
+        hour12: false,
+        timeZone: "Asia/Seoul",
+      }).format(new Date()),
+    );
+    return HOUR_OPTIONS.filter((value) => value > currentSeoulHour);
+  }, [date]);
 
   useEffect(() => {
     if (selectableHours.length && !selectableHours.includes(hour)) setHour(selectableHours[0]);
-  }, [date]);
+  }, [hour, selectableHours]);
 
   useEffect(() => {
     publicBikeService.getStations(3000)

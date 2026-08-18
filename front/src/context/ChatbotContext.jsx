@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import chatbotService from "../services/chatbotService";
-import { CHATBOT_MOCK_ANSWERS } from "../constants/mockData";
+import { CHATBOT_WELCOME_MESSAGE } from "../constants/mockData";
 
 const ChatbotContext = createContext(null);
 
 const INITIAL_MESSAGES = [
-  { id: "welcome", role: "bot", text: CHATBOT_MOCK_ANSWERS.기본, time: "12:43" },
+  { id: "welcome", role: "bot", text: CHATBOT_WELCOME_MESSAGE, time: "12:43" },
 ];
 
 export function ChatbotProvider({ children }) {

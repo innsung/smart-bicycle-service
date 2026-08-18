@@ -125,6 +125,75 @@ def load_optional_weather() -> pd.DataFrame | None:
     return frame[list(required)].drop_duplicates("datetime")
 
 
+def merge_source_files(
+    usage_files: list[Path],
+    availability_files: list[Path],
+    completion_label: str,
+) -> Path:
+    """선택된 기간과 관계없이 동일한 정제·병합·저장 절차를 수행합니다."""
+    usage = pd.concat(
+        [aggregate_hourly_usage(path) for path in usage_files], ignore_index=True
+    )
+    usage = usage.groupby(
+        ["station_id", "station_name", "datetime"], as_index=False
+    )["rental_count"].sum()
+
+    if availability_files:
+        availability = pd.concat(
+            [aggregate_availability(path) for path in availability_files],
+            ignore_index=True,
+        )
+        availability["datetime"] = availability["date"] + pd.to_timedelta(
+            availability["hour"], unit="h"
+        )
+        availability = (
+            availability.drop(columns=["date", "hour"])
+            .drop_duplicates(["station_id", "datetime"], keep="last")
+        )
+        usage = usage.merge(
+            availability, on=["station_id", "datetime"], how="left"
+        )
+    else:
+        usage["current_available_bikes"] = pd.NA
+
+    station_master = load_optional_station_master()
+    if station_master is not None:
+        usage = usage.merge(station_master, on="station_id", how="left")
+    else:
+        usage["district"] = "미상"
+
+    weather = load_optional_weather()
+    if weather is not None:
+        usage = usage.merge(weather, on="datetime", how="left")
+    else:
+        for column in ("temperature", "humidity", "rainfall", "wind_speed"):
+            usage[column] = pd.NA
+
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    output = PROCESSED_DIR / "bike_hourly_merged.csv.gz"
+    usage.sort_values(["station_id", "datetime"]).to_csv(
+        output, index=False, compression="gzip"
+    )
+    print(f"{completion_label}: {len(usage):,}행 → {output}")
+    return output
+
+
+def find_usage_file(period: pd.Period, candidates: list[Path]) -> Path:
+    """파일명에서 연월을 찾아 한 달에 해당하는 이용정보 CSV 하나를 반환합니다."""
+    digits = period.strftime("%Y%m")
+    matched = [
+        path
+        for path in candidates
+        if digits in re.sub(r"\D", "", path.stem)
+        or digits[2:] in re.sub(r"\D", "", path.stem)
+    ]
+    if len(matched) != 1:
+        raise FileNotFoundError(
+            f"{period} 이용정보 CSV를 정확히 1개 찾지 못했습니다: {matched}"
+        )
+    return matched[0]
+
+
 def build_base_dataset(max_files: int | None = None) -> Path:
     usage_files = sorted(HOURLY_USAGE_DIR.glob("*.csv"))
     availability_files = sorted(path for path in AVAILABILITY_DIR.glob("*.csv") if "data_" in path.name or re.match(r"\d{2}\.\d{2}", path.name))
@@ -133,36 +202,7 @@ def build_base_dataset(max_files: int | None = None) -> Path:
         availability_files = availability_files[-max_files:]
     if not usage_files:
         raise FileNotFoundError(f"시간대별 이용정보 CSV가 없습니다: {HOURLY_USAGE_DIR}")
-
-    usage = pd.concat([aggregate_hourly_usage(path) for path in usage_files], ignore_index=True)
-    usage = usage.groupby(["station_id", "station_name", "datetime"], as_index=False)["rental_count"].sum()
-
-    if availability_files:
-        availability = pd.concat([aggregate_availability(path) for path in availability_files], ignore_index=True)
-        availability["datetime"] = availability["date"] + pd.to_timedelta(availability["hour"], unit="h")
-        availability = availability.drop(columns=["date", "hour"]).drop_duplicates(["station_id", "datetime"], keep="last")
-        usage = usage.merge(availability, on=["station_id", "datetime"], how="left")
-    else:
-        usage["current_available_bikes"] = pd.NA
-
-    station_master = load_optional_station_master()
-    if station_master is not None:
-        usage = usage.merge(station_master, on="station_id", how="left")
-    else:
-        usage["district"] = "미상"
-
-    weather = load_optional_weather()
-    if weather is not None:
-        usage = usage.merge(weather, on="datetime", how="left")
-    else:
-        for column in ("temperature", "humidity", "rainfall", "wind_speed"):
-            usage[column] = pd.NA
-
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    output = PROCESSED_DIR / "bike_hourly_merged.csv.gz"
-    usage.sort_values(["station_id", "datetime"]).to_csv(output, index=False, compression="gzip")
-    print(f"병합 완료: {len(usage):,}행 → {output}")
-    return output
+    return merge_source_files(usage_files, availability_files, "병합 완료")
 
 
 def build_month_dataset(year_month: str) -> Path:
@@ -171,45 +211,15 @@ def build_month_dataset(year_month: str) -> Path:
     if not re.fullmatch(r"\d{6}", digits):
         raise ValueError("--year-month는 YYYY-MM 형식이어야 합니다. 예: 2025-10")
 
-    usage_candidates = [
-        path for path in HOURLY_USAGE_DIR.glob("*.csv")
-        if digits in re.sub(r"\D", "", path.stem) or digits[2:] in re.sub(r"\D", "", path.stem)
-    ]
+    period = pd.Period(year_month, freq="M")
+    usage_file = find_usage_file(period, list(HOURLY_USAGE_DIR.glob("*.csv")))
     availability_candidates = [
         path for path in AVAILABILITY_DIR.glob("*.csv")
         if digits[2:] in re.sub(r"\D", "", path.stem)
     ]
-    if len(usage_candidates) != 1:
-        raise FileNotFoundError(f"{year_month} 시간대별 이용정보 파일을 정확히 1개 찾지 못했습니다: {usage_candidates}")
-
-    # 기존 병합 로직과 동일하되 선택 월 파일만 임시 목록으로 처리합니다.
-    usage = aggregate_hourly_usage(usage_candidates[0])
-    if availability_candidates:
-        availability = pd.concat([aggregate_availability(path) for path in availability_candidates], ignore_index=True)
-        availability["datetime"] = availability["date"] + pd.to_timedelta(availability["hour"], unit="h")
-        availability = availability.drop(columns=["date", "hour"]).drop_duplicates(["station_id", "datetime"], keep="last")
-        usage = usage.merge(availability, on=["station_id", "datetime"], how="left")
-    else:
-        usage["current_available_bikes"] = pd.NA
-
-    station_master = load_optional_station_master()
-    if station_master is not None:
-        usage = usage.merge(station_master, on="station_id", how="left")
-    else:
-        usage["district"] = "미상"
-
-    weather = load_optional_weather()
-    if weather is not None:
-        usage = usage.merge(weather, on="datetime", how="left")
-    else:
-        for column in ("temperature", "humidity", "rainfall", "wind_speed"):
-            usage[column] = pd.NA
-
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    output = PROCESSED_DIR / "bike_hourly_merged.csv.gz"
-    usage.sort_values(["station_id", "datetime"]).to_csv(output, index=False, compression="gzip")
-    print(f"{year_month} 병합 완료: {len(usage):,}행 → {output}")
-    return output
+    return merge_source_files(
+        [usage_file], availability_candidates, f"{year_month} 병합 완료"
+    )
 
 
 def build_period_dataset(start_month: str, months: int) -> Path:
@@ -227,42 +237,14 @@ def build_period_dataset(start_month: str, months: int) -> Path:
     all_availability_files = list(AVAILABILITY_DIR.glob("*.csv"))
     for period in periods:
         digits = period.strftime("%Y%m")
-        usage_candidates = [path for path in all_usage_files
-                            if digits in re.sub(r"\D", "", path.stem)
-                            or digits[2:] in re.sub(r"\D", "", path.stem)]
-        if len(usage_candidates) != 1:
-            raise FileNotFoundError(f"{period} 이용정보 CSV를 정확히 1개 찾지 못했습니다: {usage_candidates}")
-        usage_files.append(usage_candidates[0])
+        usage_files.append(find_usage_file(period, all_usage_files))
         availability_files.extend(path for path in all_availability_files
                                   if digits[2:] in re.sub(r"\D", "", path.stem))
-
-    usage = pd.concat([aggregate_hourly_usage(path) for path in usage_files], ignore_index=True)
-    usage = usage.groupby(["station_id", "station_name", "datetime"], as_index=False)["rental_count"].sum()
-    if availability_files:
-        availability = pd.concat([aggregate_availability(path) for path in availability_files], ignore_index=True)
-        availability["datetime"] = availability["date"] + pd.to_timedelta(availability["hour"], unit="h")
-        availability = availability.drop(columns=["date", "hour"]).drop_duplicates(["station_id", "datetime"], keep="last")
-        usage = usage.merge(availability, on=["station_id", "datetime"], how="left")
-    else:
-        usage["current_available_bikes"] = pd.NA
-
-    station_master = load_optional_station_master()
-    if station_master is not None:
-        usage = usage.merge(station_master, on="station_id", how="left")
-    else:
-        usage["district"] = "미상"
-    weather = load_optional_weather()
-    if weather is not None:
-        usage = usage.merge(weather, on="datetime", how="left")
-    else:
-        for column in ("temperature", "humidity", "rainfall", "wind_speed"):
-            usage[column] = pd.NA
-
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    output = PROCESSED_DIR / "bike_hourly_merged.csv.gz"
-    usage.sort_values(["station_id", "datetime"]).to_csv(output, index=False, compression="gzip")
-    print(f"{periods[0]} ~ {periods[-1]} 병합 완료: {len(usage):,}행 → {output}")
-    return output
+    return merge_source_files(
+        usage_files,
+        availability_files,
+        f"{periods[0]} ~ {periods[-1]} 병합 완료",
+    )
 
 
 if __name__ == "__main__":
