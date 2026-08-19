@@ -1,0 +1,63 @@
+# PEDALUP FastAPI Server
+
+## 구조
+
+```text
+main.py                 FastAPI 생성·라우터 등록·테이블 생성
+routes/                 HTTP 엔드포인트
+services/               회원·챗봇·따릉이·ML 비즈니스 로직
+schemas/                Pydantic 요청·응답 형식
+models/                 SQLAlchemy BikeMember 및 ML 모델
+database/connection.py  Engine·SessionLocal·get_db
+clients/                서울시·기상청 외부 API
+repositories/           이용정보 CSV·JSON 분석 저장소
+```
+
+## 실행
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+Copy-Item .env.example .env
+uvicorn main:app --reload --port 8000
+```
+
+- Swagger: `http://127.0.0.1:8000/docs`
+- Health Check: `GET http://127.0.0.1:8000/health`
+- 외부 API 기능은 `.env`에 서울시·기상청·OpenAI 인증키를 입력해야 합니다.
+- `DB_NAME`을 비워두면 SQLite, 입력하면 `DB_*` 기반 MySQL을 사용합니다.
+
+## 주요 API
+
+| HTTP | 경로 | 구현 파일 |
+|---|---|---|
+| GET | `/api/bike/seoul/summary` | `routes/bike.py → services/bike.py` |
+| GET | `/api/bike/seoul/stations` | `routes/bike.py → clients/seoul_bike.py` |
+| GET | `/api/ai/bike/analysis` | `routes/bike.py → repositories/usage.py` |
+| POST | `/api/ai/bike/forecast` | `routes/forecast.py → services/forecast.py` |
+| POST | `/api/auth/signup` | `routes/member.py → BikeMember → DB commit` |
+| POST | `/api/auth/login` | `routes/member.py → bcrypt → JWT` |
+| GET | `/api/auth/me` | `routes/member.py → SQLAlchemy Session` |
+| POST | `/api/chat` | `routes/chat.py → services/chat.py → OpenAI` |
+
+## ML 추론 흐름
+
+```text
+POST /api/ai/bike/forecast
+→ 실시간 대여소 조회
+→ 기상청 단기예보 조회
+→ inference_features.csv에서 Lag·Rolling Feature 조회
+→ demand_model.joblib 로딩·추론
+→ 예측 대여수요·부족 대수·위험도 반환
+```
+
+과제 실행본에는 다음 파일이 포함돼 있습니다.
+
+```text
+models/artifacts/demand_model.joblib
+models/artifacts/inference_features.csv
+data/processed/usage_analysis_latest.json
+```
+
+대용량 원본 학습 CSV와 실제 `.env`는 포함하지 않습니다.

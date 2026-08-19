@@ -10,12 +10,10 @@ Thumbs.db
 *.tar
 *.gz
 
-# Local database and secrets
+# Local database and secrets (실제 회원·인증정보는 Git에 올리지 않습니다.)
 *.db
 *.sqlite
 *.sqlite3
-# 배포 확인용 로컬 DB는 Git에 포함합니다.
-!server/data/smart_bicycle.db
 .env
 !.env.example
 *.pem

@@ -1,6 +1,100 @@
 # smart-bicycle-service
 프로젝트 1
 
+## 프로젝트 구조
+
+```text
+front/src/services/        React API 호출 함수
+        ↓ HTTP 요청
+server/main.py             FastAPI 애플리케이션·라우터 등록
+server/routes/             엔드포인트·요청 검증·HTTP 오류 처리
+server/services/           비즈니스 로직·ML 추론
+server/clients/            서울시·기상청·OpenAI 외부 API
+server/repositories/       따릉이 이용정보 조회·분석 캐시
+server/schemas/            Pydantic 요청·응답 스키마
+server/models/             SQLAlchemy 모델·학습 모델 산출물
+server/database/           SQLAlchemy Engine·Session
+```
+
+## 로컬 실행
+
+### Backend
+
+```powershell
+cd server
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+Copy-Item .env.example .env
+uvicorn main:app --reload --port 8000
+```
+
+- API 문서: `http://127.0.0.1:8000/docs`
+- `.env`에는 본인의 서울시·기상청·OpenAI 인증키를 입력합니다.
+- `DB_NAME`을 비워두면 개발용 SQLite를 사용하며, MySQL 사용 시 `DB_*`를 입력합니다.
+
+### Frontend
+
+```powershell
+cd front
+npm install
+npm run dev
+```
+
+- React 개발 주소: `http://localhost:5173`
+- Vite 개발 프록시가 `/api` 요청을 FastAPI `http://127.0.0.1:8000`으로 전달합니다.
+
+### Docker Compose
+
+```bash
+docker compose up --build -d
+docker compose ps
+```
+
+## Frontend ↔ FastAPI 매핑
+
+| React 서비스 함수 | HTTP | FastAPI 엔드포인트 | 서버 처리 |
+|---|---|---|---|
+| `publicBikeService.getSummary()` | GET | `/api/bike/seoul/summary` | 실시간 현황·이용정보 요약 |
+| `publicBikeService.getStations()` | GET | `/api/bike/seoul/stations` | 서울시 전체 대여소 조회 |
+| `publicBikeService.getAnalysis()` | GET | `/api/ai/bike/analysis` | 이용정보 CSV 또는 JSON 스냅샷 분석 |
+| `publicBikeService.getForecast()` | POST | `/api/ai/bike/forecast` | ML 수요·자전거 부족 위험도 예측 |
+| `authService.signup()` | POST | `/api/auth/signup` | SQLAlchemy 회원 생성·commit/rollback |
+| `authService.login()` | POST | `/api/auth/login` | bcrypt 검증·JWT 발급 |
+| `authService.getMe()` | GET | `/api/auth/me` | Access Token 회원 조회 |
+| `chatbotService.sendMessage()` | POST | `/api/chat` | OpenAI Responses API 답변 생성 |
+
+### ML 예측 요청 예시
+
+```http
+POST /api/ai/bike/forecast
+Content-Type: application/json
+
+{
+  "station_id": "207",
+  "date": "2026-08-20",
+  "hour": 10
+}
+```
+
+```text
+DemandForecast.jsx
+→ publicBikeService.getForecast()
+→ routes/forecast.py
+→ services/forecast.py
+→ SeoulBikeClient + KMA API + inference_features.csv
+→ demand_model.joblib 추론
+→ 예측 수요·부족 위험도 응답
+```
+
+## 과제 제출 ZIP 구조
+
+- `Front(.zip)`은 `front` 폴더 안의 내용이 ZIP 최상단에 위치해야 합니다.
+- `Server(.zip)`은 `server` 폴더 안의 내용이 ZIP 최상단에 위치해야 합니다.
+- 실제 `.env`, `.pem`, `.venv`, 원본 대용량 CSV는 제출하거나 Git에 커밋하지 않습니다.
+- `server/.env.example`, `models/artifacts/demand_model.joblib`,
+  `models/artifacts/inference_features.csv`, `data/processed/usage_analysis_latest.json`은 포함합니다.
+
 #### 2026-08-11     
 - React의 mock JSON 대신 FastAPI API 연동
 - 서울시 실시간 API + Data 폴더의 csv 파일로 운영 대여소·대여 가능 자전거등 각종 항목 표시

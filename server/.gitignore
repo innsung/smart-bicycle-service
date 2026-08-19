@@ -1,4 +1,5 @@
 .env
+!.env.example
 .venv/
 __pycache__/
 *.py[cod]
@@ -13,11 +14,10 @@ data/*
 data/usage/*
 !data/usage/.gitkeep
 !data/usage/README.md
-# 분석 JSON 캐시와 로컬 DB는 포함하되 CSV 원본은 계속 제외합니다.
+# 과제 실행용 분석 JSON 스냅샷은 포함하되 실제 로컬 DB와 원본 CSV는 제외합니다.
 !data/processed/
 data/processed/*
 !data/processed/usage_analysis_latest.json
-!data/smart_bicycle.db
 data1/
 data2/
 data3/
