@@ -46,7 +46,9 @@ services:
       SEOUL_BIKE_USAGE_DATA_DIR: /app/data/usage
       REALTIME_CACHE_SECONDS: ${REALTIME_CACHE_SECONDS:-60}
       KMA_SERVICE_KEY: ${KMA_SERVICE_KEY}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://3.34.185.174}
+      # 운영 화면은 Nginx와 같은 Origin의 /api를 사용하므로 기본값은 비워둡니다.
+      # 별도 프론트 도메인을 사용할 때만 루트 .env의 CORS_ORIGINS에 지정합니다.
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
       CORS_ORIGIN_REGEX: ${CORS_ORIGIN_REGEX:-}
       TZ: Asia/Seoul
     volumes:

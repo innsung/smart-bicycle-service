@@ -11,4 +11,5 @@ export const ROUTES = {
   BIKE_ANALYSIS: "/bike/seoul/analysis",
   BIKE_FORECAST: "/bike/seoul/forecast",
   DASHBOARD: "/dashboard",
+  ACCOUNT: "/account",
 };

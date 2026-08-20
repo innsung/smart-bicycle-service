@@ -363,9 +363,9 @@ DemandForecast.jsx
 - AWS EC2에 `seoul-bike` 인스턴스를 생성하고 따릉이 서비스를 외부에서 접속할 수 있도록 배포
   - 운영체제: Ubuntu Server
   - 스토리지: `gp3 30GiB`
-  - 서비스 접속 주소: `http://3.35.11.1` (현재는 인스턴스 중지 상태)
-  - AI 분석 화면: `http://3.35.11.1/bike/seoul/analysis` (현재는 인스턴스 중지 상태)
-  - Swagger API 문서: `http://3.35.11.1/docs` (현재는 인스턴스 중지 상태)
+  - 서비스 접속 주소: `http://EC2_PUBLIC_IP`
+  - AI 분석 화면: `http://EC2_PUBLIC_IP/bike/seoul/analysis`
+  - Swagger API 문서: `http://EC2_PUBLIC_IP/docs`
 - EC2 보안 그룹 구성 
   - SSH `22`: 관리자 PC의 IP만 허용
   - HTTP `80`: 외부 접속을 위해 `0.0.0.0/0` 허용

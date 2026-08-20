@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
 from database.connection import Base, engine
-from models.member import BikeMember
+from models import BikeMember, BikePredictionHistory
 from routes.bike import router as bike_router
 from routes.forecast import router as forecast_router
 from routes.member import router as member_router
 from routes.chat import router as chat_router
+from routes.routes import router as route_router
 
 
 # 강의 프로젝트와 동일하게 서버 시작 시 SQLAlchemy 모델의 테이블을 확인·생성합니다.
@@ -25,7 +26,7 @@ app.add_middleware(
     allow_origins=settings.cors_origins,
     allow_origin_regex=settings.cors_origin_regex,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -33,6 +34,7 @@ app.include_router(bike_router, prefix="/api")
 app.include_router(forecast_router, prefix="/api")
 app.include_router(member_router, prefix="/api/auth")
 app.include_router(chat_router, prefix="/api")
+app.include_router(route_router, prefix="/api")
 
 
 @app.get("/health", tags=["system"])

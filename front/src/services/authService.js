@@ -21,6 +21,17 @@ async function getMe() {
   return data;
 }
 
+async function updateMe(payload) {
+  const { data } = await api.patch("/auth/me", payload);
+  return data;
+}
+
+async function deleteMe(password) {
+  const { data } = await api.delete("/auth/me", { data: { password } });
+  localStorage.removeItem("pedalup_access_token");
+  return data;
+}
+
 async function socialLoginNotConfigured() {
   throw new Error("소셜 로그인은 OAuth 인증키 설정 후 사용할 수 있습니다.");
 }
@@ -41,6 +52,8 @@ const authService = {
   login,
   signup,
   getMe,
+  updateMe,
+  deleteMe,
   logout,
   clearLocalSession,
   loginWithGoogle: socialLoginNotConfigured,

@@ -1,16 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import SectionTitle from "../common/SectionTitle";
 import FeaturedRouteCard from "../cards/FeaturedRouteCard";
-import { ROUTES_MOCK } from "../../constants/mockData";
+import routeService from "../../services/routeService";
 import { ROUTES } from "../../constants/routes";
 
 const REGIONS = ["북한산", "한강", "제주"];
 
 export default function PopularRouteSection() {
   const [region, setRegion] = useState(REGIONS[0]);
-  const featured = ROUTES_MOCK.find((r) => r.id === "bukhansan-loop");
+  const [featured, setFeatured] = useState(null);
+
+  useEffect(() => {
+    routeService.getRoutes().then((routes) => {
+      setFeatured(routes.find((route) => route.id === "bukhansan-loop") ?? routes[0] ?? null);
+    });
+  }, []);
 
   return (
     <section className="px-6 py-20 lg:px-16">
@@ -45,7 +51,7 @@ export default function PopularRouteSection() {
         ))}
       </div>
 
-      <FeaturedRouteCard route={featured} />
+      {featured && <FeaturedRouteCard route={featured} />}
     </section>
   );
 }

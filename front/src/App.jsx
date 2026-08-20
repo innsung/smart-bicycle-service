@@ -19,6 +19,7 @@ import StationStatus from "./pages/publicBike/StationStatus";
 import AIAnalysis from "./pages/publicBike/AIAnalysis";
 import DemandForecast from "./pages/publicBike/DemandForecast";
 import Dashboard from "./pages/dashboard/Dashboard";
+import Account from "./pages/account/Account";
 
 import { ROUTES } from "./constants/routes";
 
@@ -50,6 +51,7 @@ export default function App() {
 
             <Route element={<DashboardLayout />}>
               <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
+              <Route path={ROUTES.ACCOUNT} element={<Account />} />
             </Route>
           </Routes>
           <Chatbot />

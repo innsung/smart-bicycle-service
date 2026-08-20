@@ -69,9 +69,21 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(false);
   }, []);
 
+  const updateProfile = useCallback(async (payload) => {
+    const updatedUser = await authService.updateMe(payload);
+    setUser(updatedUser);
+    return updatedUser;
+  }, []);
+
+  const deleteAccount = useCallback(async (password) => {
+    await authService.deleteMe(password);
+    setUser(null);
+    setIsAuthenticated(false);
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated, isAuthLoading, login, signup, loginWithGoogle, loginWithKakao, logout }}
+      value={{ user, isAuthenticated, isAuthLoading, login, signup, loginWithGoogle, loginWithKakao, logout, updateProfile, deleteAccount }}
     >
       {children}
     </AuthContext.Provider>

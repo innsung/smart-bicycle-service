@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, Settings } from "lucide-react";
 import Logo from "../common/Logo";
 import { useAuth } from "../../context/AuthContext";
 import { ROUTES } from "../../constants/routes";
@@ -55,6 +55,10 @@ export default function DashboardHeader() {
             </span>
             <span className="hidden text-sm font-medium text-white sm:block">{user?.nickname || "라이더"}</span>
           </div>
+          <Link to={ROUTES.ACCOUNT} className="flex items-center gap-1 text-sm text-gray-400 hover:text-white">
+            <Settings className="h-4 w-4" />
+            내 정보
+          </Link>
           <button onClick={handleLogout} className="flex items-center gap-1 text-sm text-gray-400 hover:text-white">
             <LogOut className="h-4 w-4" />
             로그아웃

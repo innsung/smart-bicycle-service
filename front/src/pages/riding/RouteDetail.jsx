@@ -7,7 +7,6 @@ import Logo from "../../components/common/Logo";
 import AreaChartCard from "../../components/charts/AreaChartCard";
 import Loading from "../../components/common/Loading";
 import routeService from "../../services/routeService";
-import { ROUTES_MOCK } from "../../constants/mockData";
 import { ROUTES } from "../../constants/routes";
 
 const SAFETY_ICONS = [Shield, Battery, Zap, Users];
@@ -16,15 +15,17 @@ export default function RouteDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [route, setRoute] = useState(null);
+  const [otherRoutes, setOtherRoutes] = useState([]);
 
   useEffect(() => {
     setRoute(null);
-    routeService.getRouteDetail(id).then(setRoute);
+    Promise.all([routeService.getRouteDetail(id), routeService.getRoutes()]).then(([detail, routes]) => {
+      setRoute(detail);
+      setOtherRoutes(routes.filter((item) => item.id !== detail.id).slice(0, 2));
+    });
   }, [id]);
 
   if (!route) return <Loading />;
-
-  const otherRoutes = ROUTES_MOCK.filter((r) => r.id !== route.id).slice(0, 2);
 
   const infoItems = [
     { icon: Map, label: "총 거리", value: route.distance },

@@ -20,6 +20,16 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=72)
 
 
+class MemberUpdateRequest(BaseModel):
+    nickname: str | None = Field(default=None, min_length=2, max_length=50)
+    ridingStyles: list[str] | None = Field(default=None, max_length=10)
+    marketingConsent: bool | None = None
+
+
+class MemberDeleteRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=72)
+
+
 class MemberResponse(BaseModel):
     id: int
     email: str

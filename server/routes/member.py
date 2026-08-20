@@ -19,7 +19,14 @@ from core.security import (
 )
 from database.connection import get_db
 from models.member import BikeMember
-from schemas.member import AuthResponse, LoginRequest, MemberResponse, SignupRequest
+from schemas.member import (
+    AuthResponse,
+    LoginRequest,
+    MemberDeleteRequest,
+    MemberResponse,
+    MemberUpdateRequest,
+    SignupRequest,
+)
 
 
 router = APIRouter(tags=["member"])
@@ -99,6 +106,63 @@ def me(member_id: int = Depends(get_current_member_id), db: Session = Depends(ge
     if member is None or not member.is_active:
         raise HTTPException(status_code=404, detail="회원 정보를 찾을 수 없습니다.")
     return member_response(member)
+
+
+@router.patch("/me", response_model=MemberResponse)
+def update_me(
+    payload: MemberUpdateRequest,
+    member_id: int = Depends(get_current_member_id),
+    db: Session = Depends(get_db),
+):
+    """로그인 회원의 닉네임·라이딩 스타일·마케팅 동의를 수정합니다."""
+    member = db.get(BikeMember, member_id)
+    if member is None or not member.is_active:
+        raise HTTPException(status_code=404, detail="회원 정보를 찾을 수 없습니다.")
+
+    changes = payload.model_dump(exclude_unset=True)
+    if "nickname" in changes:
+        nickname = changes["nickname"].strip()
+        duplicate = db.scalar(
+            select(BikeMember).where(
+                BikeMember.nickname == nickname,
+                BikeMember.member_id != member_id,
+            )
+        )
+        if duplicate:
+            raise HTTPException(status_code=409, detail="이미 사용 중인 닉네임입니다.")
+        member.nickname = nickname
+    if "ridingStyles" in changes:
+        member.riding_styles = json.dumps(changes["ridingStyles"], ensure_ascii=False)
+    if "marketingConsent" in changes:
+        member.marketing_consent = changes["marketingConsent"]
+
+    try:
+        db.commit()
+        db.refresh(member)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="이미 등록된 회원 정보입니다.") from exc
+    return member_response(member)
+
+
+@router.delete("/me")
+def delete_me(
+    payload: MemberDeleteRequest,
+    response: Response,
+    member_id: int = Depends(get_current_member_id),
+    db: Session = Depends(get_db),
+) -> dict[str, bool]:
+    """비밀번호 확인 후 계정을 비활성화하는 소프트 삭제입니다."""
+    member = db.get(BikeMember, member_id)
+    if member is None or not member.is_active:
+        raise HTTPException(status_code=404, detail="회원 정보를 찾을 수 없습니다.")
+    if not verify_password(payload.password, member.password_hash):
+        raise HTTPException(status_code=401, detail="비밀번호가 올바르지 않습니다.")
+
+    member.is_active = False
+    db.commit()
+    response.delete_cookie(REFRESH_COOKIE_NAME, path="/api/auth")
+    return {"isDeleted": True}
 
 
 @router.post("/refresh", response_model=AuthResponse)

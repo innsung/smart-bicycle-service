@@ -74,3 +74,13 @@ def get_current_member_id(
         raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
     payload = decode_token(credentials.credentials)
     return int(payload["sub"])
+
+
+def get_optional_member_id(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+) -> int | None:
+    """토큰이 있으면 회원 ID를 반환하고, 없으면 비회원 요청으로 처리합니다."""
+    if credentials is None:
+        return None
+    payload = decode_token(credentials.credentials)
+    return int(payload["sub"])

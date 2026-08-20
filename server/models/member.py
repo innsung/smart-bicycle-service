@@ -1,11 +1,15 @@
 """회원 테이블 bike_member의 SQLAlchemy 모델."""
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.connection import Base
+
+if TYPE_CHECKING:
+    from models.prediction import BikePredictionHistory
 
 
 def utc_now() -> datetime:
@@ -27,4 +31,7 @@ class BikeMember(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
+    prediction_histories: Mapped[list["BikePredictionHistory"]] = relationship(
+        back_populates="member", cascade="all, delete-orphan"
     )

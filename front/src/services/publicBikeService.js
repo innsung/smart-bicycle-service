@@ -1,5 +1,4 @@
 import api from "../api/axios";
-import { ROUTES_MOCK } from "../constants/mockData";
 
 async function getSummary() {
   const { data } = await api.get("/bike/seoul/summary");
@@ -7,12 +6,8 @@ async function getSummary() {
 }
 
 async function getBikeRoutes() {
-  try {
-    const { data } = await api.get("/bike/seoul/routes");
-    return data;
-  } catch {
-    return ROUTES_MOCK;
-  }
+  const { data } = await api.get("/bike/seoul/routes");
+  return data;
 }
 
 async function getStations(limit = 6) {
@@ -34,5 +29,10 @@ async function getForecast({ stationId, date, hour }) {
   return data;
 }
 
-const publicBikeService = { getSummary, getBikeRoutes, getStations, getAnalysis, getForecast };
+async function getForecastHistory(limit = 20) {
+  const { data } = await api.get("/ai/bike/forecast/history", { params: { limit } });
+  return data;
+}
+
+const publicBikeService = { getSummary, getBikeRoutes, getStations, getAnalysis, getForecast, getForecastHistory };
 export default publicBikeService;

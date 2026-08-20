@@ -15,6 +15,18 @@ def run() -> None:
     client = TestClient(app)
     assert client.get("/health").json() == {"status": "ok"}
 
+    # 프론트 경로 화면은 mock fallback 없이 FastAPI 카탈로그 API를 사용합니다.
+    public_routes = client.get("/api/bike/seoul/routes")
+    assert public_routes.status_code == 200
+    assert public_routes.json()[0]["bikeType"] == "따릉이"
+    personal_routes = client.get("/api/routes", params={"type": "personal"})
+    assert personal_routes.status_code == 200
+    assert all(route["bikeType"] != "따릉이" for route in personal_routes.json())
+    route_detail = client.get("/api/routes/bukhansan-loop")
+    assert route_detail.status_code == 200
+    assert route_detail.json()["id"] == "bukhansan-loop"
+    assert client.get("/api/routes/not-found").status_code == 404
+
     sample = Path(__file__).parent / "data" / "usage_sample.csv"
     result = UsageRepository._aggregate((sample,), 2025)
     assert result.total_usage == 60

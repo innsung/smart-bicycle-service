@@ -25,6 +25,26 @@ uvicorn main:app --reload --port 8000
 
 - Swagger: `http://127.0.0.1:8000/docs`
 - Health Check: `GET http://127.0.0.1:8000/health`
+
+## 회원·예측 이력 CRUD
+
+- `POST /api/auth/signup`: 회원 생성
+- `GET /api/auth/me`: 내 회원정보 조회
+- `PATCH /api/auth/me`: 닉네임·라이딩 스타일·마케팅 동의 수정
+- `DELETE /api/auth/me`: 비밀번호 확인 후 계정 비활성화
+- `POST /api/ai/bike/forecast`: AI 예측 실행, 로그인 회원이면 결과 자동 저장
+- `GET /api/ai/bike/forecast/history`: 로그인 회원의 예측 이력 조회
+
+`bike_member`와 `bike_prediction_history`는 SQLAlchemy 1:N 관계이며 서버 시작 시 없는 테이블만 자동 생성합니다.
+
+## 자전거 루트 API
+
+- `GET /api/routes`: 전체 등록 루트
+- `GET /api/routes?type=personal`: 개인 자전거 루트
+- `GET /api/routes/{route_id}`: 루트 상세
+- `GET /api/bike/seoul/routes`: 따릉이 루트
+
+React 경로 화면은 mock fallback 없이 위 FastAPI API를 직접 호출합니다.
 - 외부 API 기능은 `.env`에 서울시·기상청·OpenAI 인증키를 입력해야 합니다.
 - `DB_NAME`을 비워두면 SQLite, 입력하면 `DB_*` 기반 MySQL을 사용합니다.
 

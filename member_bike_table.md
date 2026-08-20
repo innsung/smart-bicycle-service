@@ -69,3 +69,30 @@ MySQL의 `TINYINT(1)`은 Boolean 값으로 사용합니다.
 | 체크 해제 | `false` | `0` | 마케팅 수신 미동의 |
 | 체크 | `true` | `1` | 마케팅 수신 동의 |
 
+## `bike_prediction_history` 테이블
+
+로그인 회원이 실행한 AI 수요예측 결과를 저장합니다. `bike_member` 한 행에 여러 예측 이력이 연결되는 1:N 구조입니다.
+
+| 컬럼명 | MySQL 타입 | Key | 의미 |
+|---|---|---|---|
+| `prediction_id` | `INT` | `PRI` | 예측 이력 고유번호 |
+| `member_id` | `INT` | `FK`, `INDEX` | 예측을 실행한 회원 번호 |
+| `station_id` | `VARCHAR(30)` | `INDEX` | 따릉이 대여소 ID |
+| `station_name` | `VARCHAR(255)` |  | 대여소명 |
+| `prediction_datetime` | `DATETIME` | `INDEX` | 사용자가 선택한 예측 시점 |
+| `predicted_demand` | `INT` |  | 모델이 예측한 대여 수요 |
+| `available_bikes` | `INT` |  | 예측 실행 당시 대여 가능 자전거 수 |
+| `shortage_count` | `INT` |  | 예측 부족 대수 |
+| `shortage_risk_percent` | `FLOAT` |  | 자전거 부족 위험도 |
+| `risk_level` | `VARCHAR(20)` |  | 낮음·보통·높음·매우 높음 |
+| `created_at` | `DATETIME` |  | 이력 저장 시각 |
+
+```text
+bike_member.member_id (PK)
+        1
+        │ relationship
+        N
+bike_prediction_history.member_id (FK)
+```
+
+두 테이블은 FastAPI 시작 시 `Base.metadata.create_all(bind=engine)`에 의해 없을 경우 자동 생성됩니다.
