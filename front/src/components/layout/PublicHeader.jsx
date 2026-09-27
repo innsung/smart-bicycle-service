@@ -56,6 +56,9 @@ export default function PublicHeader({ backTo, backLabel, centerLabel, showNav =
         {showAuthActions && isAuthenticated ? (
           <div className="flex items-center gap-4">
             <span className="hidden text-sm font-semibold text-white sm:block">{user?.nickname}님</span>
+            <Button as={Link} to={ROUTES.DASHBOARD} size="sm">
+              대시보드
+            </Button>
             <Button size="sm" variant="dark" onClick={handleLogout}>로그아웃</Button>
           </div>
         ) : showAuthActions ? (
